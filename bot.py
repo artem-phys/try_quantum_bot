@@ -1,8 +1,8 @@
 import os
 import telebot
 
-from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
-from qiskit.visualization import plot_bloch_vector
+from qiskit import QuantumCircuit, Aer
+from qiskit.visualization import plot_bloch_vector, plot_histogram
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 
@@ -48,13 +48,30 @@ def display_bloch_sphere_handler(message):
         circuit.x(1)
         circuit.h(range(3))
         circuit.cx(0, 1)
-        circuit.measure(range(3), range(3));
+        circuit.measure(range(3), range(3))
 
         qc_fig = circuit.draw('mpl')
 
         qc_fig.savefig('qc.png', dpi=300, bbox_inches="tight")
-        bot.send_photo(message.chat.id, photo=open('qc.png', 'rb'),
+        sent_msg = bot.send_photo(message.chat.id, photo=open('qc.png', 'rb'),
                        caption="Квантовая цепочка")
+        bot.register_next_step_handler(sent_msg, run_qc_handler)
+
+    def run_qc_handler(message):
+        text = "Вот что получилось"
+
+        # Build a quantum circuit
+        qc = QuantumCircuit(3, 3)
+
+        backend = Aer.get_backend('statevector_simulator')
+        job = backend.run(qc)
+        counts = job.result().get_counts()
+
+        counts_fig = circuit.draw('mpl')
+
+        counts_fig.savefig('counts.png', dpi=300, bbox_inches="tight")
+        sent_msg = bot.send_photo(message.chat.id, photo=open('counts.png', 'rb'),
+                       caption="Результат запуска")
 
 
 @bot.message_handler(func=lambda msg: True)
