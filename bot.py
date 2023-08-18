@@ -60,12 +60,14 @@ def qasm_code_handler(message):
 
 
 def run_qc_handler(message):
+
+    shots = message.text.split()[-1]
     # Build a quantum circuit
     qasm_code_filename = f'qasm_code_{message.chat.id}.txt'
     qc = QuantumCircuit.from_qasm_str(open(qasm_code_filename, 'r').read())
 
     backend = Aer.get_backend('statevector_simulator')
-    job = backend.run(qc)
+    job = backend.run(qc, shots=shots)
     counts = job.result().get_counts()
 
     counts_fig = plot_histogram(counts)
