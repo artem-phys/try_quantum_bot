@@ -46,7 +46,7 @@ def qasm_code_handler(message):
     open(qasm_code_filename, 'w').write(message.text)
 
     # Build a quantum circuit
-    circuit = QuantumCircuit.from_qasm_str(message)
+    circuit = QuantumCircuit.from_qasm_str(message.text)
     qc_fig = circuit.draw('mpl')
 
     qc_fig.savefig('qc.png', dpi=300, bbox_inches="tight")
@@ -61,7 +61,8 @@ def qasm_code_handler(message):
 
 def run_qc_handler(message):
     # Build a quantum circuit
-    qc = QuantumCircuit(3, 3)
+    qasm_code_filename = f'qasm_code_{message.chat.id}.txt'
+    qc = QuantumCircuit.from_qasm_str(open(qasm_code_filename, 'r').read())
 
     backend = Aer.get_backend('statevector_simulator')
     job = backend.run(qc)
