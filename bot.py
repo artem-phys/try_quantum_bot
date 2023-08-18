@@ -2,7 +2,8 @@ import os
 import telebot
 
 from qiskit import QuantumCircuit, Aer
-from qiskit.visualization import plot_bloch_vector, plot_histogram
+from qiskit.quantum_info import Statevector
+from qiskit.visualization import plot_bloch_multivector, plot_histogram
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 
@@ -23,9 +24,9 @@ def bloch_sphere_handler(message):
 
 
 def display_bloch_sphere_handler(message):
-    text = "Вот что получилось"
+    sv = Statevector.from_label(message)
 
-    result = plot_bloch_vector([0, 1, 0])
+    result = plot_bloch_multivector(sv)
 
     result.savefig('bloch_state.png', dpi=300, bbox_inches="tight")
     bot.send_photo(message.chat.id, photo=open('bloch_state.png', 'rb'),
@@ -33,50 +34,48 @@ def display_bloch_sphere_handler(message):
 
 
 # Отображение квантовой цепочки из QASM сода
-    @bot.message_handler(commands=['qasm_code'])
-    def qasm_handler(message):
-        text = "Введи код на QASM, и я покажу твою цепочку"
-        sent_msg = bot.send_message(message.chat.id, text, parse_mode="Markdown")
-        bot.register_next_step_handler(sent_msg, qasm_code_handler)
+@bot.message_handler(commands=['qasm_code'])
+def qasm_handler(message):
+    text = "Введи код на QASM, и я покажу твою цепочку"
+    sent_msg = bot.send_message(message.chat.id, text, parse_mode="Markdown")
+    bot.register_next_step_handler(sent_msg, qasm_code_handler)
 
-    def qasm_code_handler(message):
-        text = "Вот что получилось"
 
-        # Build a quantum circuit
-        circuit = QuantumCircuit(3, 3)
+def qasm_code_handler(message):
+    qasm_code_filename = f'qasm_code_{message.chat.id}.txt'
+    open(qasm_code_filename, 'w').write(message.text)
 
-        circuit.x(1)
-        circuit.h(range(3))
-        circuit.cx(0, 1)
-        circuit.measure(range(3), range(3))
+    # Build a quantum circuit
+    circuit = QuantumCircuit.from_qasm_str(message)
+    qc_fig = circuit.draw('mpl')
 
-        qc_fig = circuit.draw('mpl')
+    qc_fig.savefig('qc.png', dpi=300, bbox_inches="tight")
+    bot.send_photo(message.chat.id, photo=open('qc.png', 'rb'),
+                   caption="Квантовая цепочка")
 
-        qc_fig.savefig('qc.png', dpi=300, bbox_inches="tight")
-        sent_msg = bot.send_photo(message.chat.id, photo=open('qc.png', 'rb'),
-                       caption="Квантовая цепочка")
-        bot.register_next_step_handler(sent_msg, run_qc_handler)
+    text = "Введите /run x , чтобы запустить цепочку"
+    sent_msg2 = bot.send_message(message.chat.id, text, parse_mode="Markdown")
 
-    def run_qc_handler(message):
-        text = "Вот что получилось"
+    bot.register_next_step_handler(sent_msg2, run_qc_handler)
 
-        # Build a quantum circuit
-        qc = QuantumCircuit(3, 3)
 
-        backend = Aer.get_backend('statevector_simulator')
-        job = backend.run(qc)
-        counts = job.result().get_counts()
+def run_qc_handler(message):
+    # Build a quantum circuit
+    qc = QuantumCircuit(3, 3)
 
-        counts_fig = circuit.draw('mpl')
+    backend = Aer.get_backend('statevector_simulator')
+    job = backend.run(qc)
+    counts = job.result().get_counts()
 
-        counts_fig.savefig('counts.png', dpi=300, bbox_inches="tight")
-        sent_msg = bot.send_photo(message.chat.id, photo=open('counts.png', 'rb'),
-                       caption="Результат запуска")
+    counts_fig = plot_histogram(counts)
+
+    counts_fig.savefig('counts.png', dpi=300, bbox_inches="tight")
+    bot.send_photo(message.chat.id, photo=open('counts.png', 'rb'), caption="Результат запуска")
 
 
 @bot.message_handler(func=lambda msg: True)
 def dunno_all(message):
-    dunno_text = "Я не знаю, как на это ответить"
+    dunno_text = "Доступные команды: /bloch_sphere /qasm_code"
     bot.reply_to(message, dunno_text)
 
 
