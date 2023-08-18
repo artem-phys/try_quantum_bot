@@ -1,8 +1,7 @@
 import os
-
 import telebot
 
-from utils import get_daily_horoscope
+from qiskit.visualization import plot_bloch_vector
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 
@@ -11,37 +10,30 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 @bot.message_handler(commands=['start', 'hello'])
 def send_welcome(message):
-    bot.reply_to(message, "Howdy, how are you doing?")
+    bot.reply_to(message, "Здравствуйте! Я try_quantum_bot. С моей помощью можно познакомиться с миром квантовых вычислений")
 
 
-@bot.message_handler(commands=['horoscope'])
-def sign_handler(message):
-    text = "What's your zodiac sign?\nChoose one: *Aries*, *Taurus*, *Gemini*, *Cancer,* *Leo*, *Virgo*, *Libra*, *Scorpio*, *Sagittarius*, *Capricorn*, *Aquarius*, and *Pisces*."
+@bot.message_handler(commands=['bloch_sphere'])
+def bloch_sphere_handler(message):
+    text = "Наберите в сообщении состояние для отображения на сфере Блоха"
     sent_msg = bot.send_message(message.chat.id, text, parse_mode="Markdown")
     bot.register_next_step_handler(sent_msg, day_handler)
 
 
-def day_handler(message):
-    sign = message.text
-    text = "What day do you want to know?\nChoose one: *TODAY*, *TOMORROW*, *YESTERDAY*, or a date in format YYYY-MM-DD."
-    sent_msg = bot.send_message(
-        message.chat.id, text, parse_mode="Markdown")
-    bot.register_next_step_handler(
-        sent_msg, fetch_horoscope, sign.capitalize())
+def display_bloch_sphere_handler(message):
+    text = "Вот что получилось"
 
+    result = plot_bloch_vector([0, 1, 0])
 
-def fetch_horoscope(message, sign):
-    day = message.text
-    horoscope = get_daily_horoscope(sign, day)
-    data = horoscope["data"]
-    horoscope_message = f'*Horoscope:* {data["horoscope_data"]}\n*Sign:* {sign}\n*Day:* {data["date"]}'
-    bot.send_message(message.chat.id, "Here's your horoscope!")
-    bot.send_message(message.chat.id, horoscope_message, parse_mode="Markdown")
+    result.savefig('bloch_state.png', dpi=300, bbox_inches="tight")
+    bot.send_photo(message.chat.id, photo=open('bloch_state.png', 'rb'),
+                   caption="Ваше состояние")
 
 
 @bot.message_handler(func=lambda msg: True)
-def echo_all(message):
-    bot.reply_to(message, message.text)
+def dunno_all(message):
+    dunno_text = "Я не знаю, как на это ответить"
+    bot.reply_to(message, dunno_text)
 
 
 bot.infinity_polling()
