@@ -24,7 +24,7 @@ def bloch_sphere_handler(message):
 
 
 def display_bloch_sphere_handler(message):
-    sv = Statevector.from_label(message)
+    sv = Statevector.from_label(message.text)
 
     result = plot_bloch_multivector(sv)
 
