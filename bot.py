@@ -17,7 +17,7 @@ def send_welcome(message):
 def bloch_sphere_handler(message):
     text = "Наберите в сообщении состояние для отображения на сфере Блоха"
     sent_msg = bot.send_message(message.chat.id, text, parse_mode="Markdown")
-    bot.register_next_step_handler(sent_msg, day_handler)
+    bot.register_next_step_handler(sent_msg, display_bloch_sphere_handler)
 
 
 def display_bloch_sphere_handler(message):
